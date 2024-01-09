@@ -1,80 +1,82 @@
-# from deepface import DeepFace
-#
-#
-#
-#
-# def generate_face_embedding(image_path):
-#     try:
-#         embedding = DeepFace.represent(img_path=image_path, model_name='Facenet')
-#         return embedding
-#     except Exception as e:
-#         print(f"Error in generating embedding: {e}")
-#         return None
-#
-#
-# def verify_faces(embedding1, embedding2, distance_metric='cosine', threshold=0.4):
-#     from deepface.commons import distance as dst
-#     distance = dst.findCosineDistance(embedding1, embedding2)
-#     if distance <= threshold:
-#         return "Faces are similar", distance
-#     else:
-#         return "Faces are not similar", distance
-#
-#
-# import mediapipe as mp
-# import cv2
-# import numpy as np
-# #import ImageEmbedder
-# from mediapipe.tasks.python import vision
-# mp_embedder = vision.image_embedder
-#
-#
-# def generate_image_embedding(image_path):
-#     with mp_embedder.ImageEmbedder(model_path=mp_embedder.SELFIE_V2_EMBEDDER_MODEL_PATH) as embedder:
-#         image = cv2.imread(image_path)
-#         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#
-#         result = embedder.embed(image_rgb)
-#         if result.embeddings:
-#             return result.embeddings[0].feature_vector
-#         else:
-#             return None
-#
-# def compute_similarity(embedding1, embedding2):
-#     if embedding1 is None or embedding2 is None:
-#         return 0  # Return 0 similarity if either embedding is None
-#
-#     similarity = mp_embedder.ImageEmbedder.cosine_similarity(embedding1, embedding2)
-#     return similarity
-#
+import cv2
+import numpy as np
 
 
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
+def preprocess_image(image: np.ndarray) -> np.ndarray:
+    """
+    Apply preprocessing to the input image if needed.
+
+    Args:
+    image (np.ndarray): The input image array.
+
+    Returns:
+    np.ndarray: The preprocessed image array.
+    """
+    # Normalize the image and convert it back to uint8
+    return np.uint8(image / 255.0 * 255)
 
 
+def face_embedding_from_array(image_array: np.ndarray) -> np.ndarray:
+    """
+    Generate face embeddings from an image array using a pre-trained model.
+
+    Args:
+    image_array (np.ndarray): A numpy array representation of an image.
+
+    Returns:
+    np.ndarray: A numpy array representing the face embedding.
+
+    Raises:
+    ValueError: If no face is detected in the image.
+    """
+    model_file = r"facelib\res10_300x300_ssd_iter_140000.caffemodel"
+    config_file = r"facelib\deploy.prototxt.txt"
+    net = cv2.dnn.readNetFromCaffe(config_file, model_file)
+
+    # Preprocess the image
+    processed_image = preprocess_image(image_array)
+
+    # Create a blob from the image array
+    blob = cv2.dnn.blobFromImage(processed_image, 1.0, (300, 300), [104, 117, 123], False, False)
+
+    # Set the input to the network and forward pass to get the output
+    net.setInput(blob)
+    detections = net.forward()
+
+    for i in range(detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
+        if confidence > 0.5:
+            return detections[0, 0, i, 3:7] * np.array(
+                [image_array.shape[1], image_array.shape[0], image_array.shape[1], image_array.shape[0]])
+
+    raise ValueError("No face detected in the image.")
 
 
-def initialize_image_embedder(model_path='embedder.tflite', l2_normalize=True, quantize=True):
-    base_options = python.BaseOptions(model_asset_path=model_path)
-    options = vision.ImageEmbedderOptions(
-        base_options=base_options, l2_normalize=l2_normalize, quantize=quantize)
-    embedder = vision.ImageEmbedder.create_from_options(options)
-    return embedder
+def face_embedding_from_path(image_path: str) -> np.ndarray:
+    """
+    Generate face embeddings from an image file path.
 
-embedder = initialize_image_embedder()
+    Args:
+    image_path (str): Path to the image file.
 
-import mediapipe as mp
-
-def generate_image_embedding(embedder, image_path):
-    image = mp.Image.create_from_file(image_path)
-    embedding_result = embedder.embed(image)
-    if embedding_result.embeddings:
-        return embedding_result.embeddings[0]
-    else:
-        return None
+    Returns:
+    np.ndarray: A numpy array representing the face embedding.
+    """
+    image = cv2.imread(image_path)
+    return face_embedding_from_array(image)
 
 
-def calculate_cosine_similarity(embedding1, embedding2):
-    similarity = vision.ImageEmbedder.cosine_similarity(embedding1, embedding2)
-    return similarity
+def verify_faces(embedding1: np.ndarray, embedding2: np.ndarray, threshold: float = 0.5) -> bool:
+    """
+    Compare two face embeddings to determine if they represent the same person.
+
+    Args:
+    embedding1 (np.ndarray): The first face embedding.
+    embedding2 (np.ndarray): The second face embedding.
+    threshold (float): The threshold for deciding if embeddings represent the same face.
+
+    Returns:
+    bool: True if the embeddings represent the same face, False otherwise.
+    """
+    distance = np.linalg.norm(embedding1 - embedding2)
+    return distance #< threshold

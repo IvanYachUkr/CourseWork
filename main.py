@@ -72,26 +72,32 @@ from facelib.emotion_detection import detect_emotions_in_frame
 #     display_cropped_faces([detected_face])
 
 
-detected_face = capture_frame_with_face()
-if detected_face is not None:
-    display_cropped_faces([detected_face])
+# detected_face = capture_frame_with_face()
+# if detected_face is not None:
+#     display_cropped_faces([detected_face])
 
-main_image =  convert_to_rgb(detected_face)
+# main_image =  convert_to_rgb(detected_face)
+#
+# face_borders = detect_faces_borders(main_image)
+#
+# faces = crop_faces(main_image, face_borders)
+#
+# display_cropped_faces(faces)
 
-face_borders = detect_faces_borders(main_image)
+# print(np.array(faces[0]))
+# emotions = detect_emotions_in_frame(faces[0])
+# print("Detected Emotions:", emotions)
 
-faces = crop_faces(main_image, face_borders)
-
-display_cropped_faces(faces)
-
-print(np.array(faces[0]))
-emotions = detect_emotions_in_frame(faces[0])
-print("Detected Emotions:", emotions)
-
-from facelib.embeddings import generate_face_embedding
-import facelib.embeddings as em
-embedding1 = em.generate_face_embedding('Figure_1.png')
-embedding2 = em.generate_face_embedding('Figure_2.png')
-
-similarity = em.calculate_cosine_similarity(embedding1, embedding2)
-print(f"Cosine Similarity: {similarity}")
+# from facelib.embeddings import generate_face_embedding, verify_faces
+# #import facelib.embeddings as em
+# embedding1 = generate_face_embedding('Figure_3.png')
+# embedding2 = generate_face_embedding('Figure_2.png')
+#
+# similarity = verify_faces(embedding1, embedding2)
+# print(f"Cosine Similarity: {similarity}")
+#
+#
+from facelib.embeddings import face_embedding_from_path, verify_faces
+embedding1 = face_embedding_from_path('Figure_1.png')
+embedding2 = face_embedding_from_path('Figure_3.png')
+print("Are the faces the same?", verify_faces(embedding1, embedding2))
