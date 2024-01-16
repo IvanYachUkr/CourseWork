@@ -4,25 +4,24 @@ import os
 import tempfile
 from deepface import DeepFace
 import numpy as np
+from face_recognition import single_input_as_path
 
 
-def detect_emotions_in_image(image_path: str) -> Optional[Dict[str, float]]:
+@single_input_as_path
+def detect_emotions_in_image(image_path):
     """
     Detects emotions in an image file using DeepFace.
 
     Args:
     image_path (str): Path to the image file.
 
-    Returns: Optional[Dict[str, float]]: A dictionary containing the detected emotions and their probabilities,
-    or None if an error occurs.
+    Returns:
+    dict: A dictionary containing the detected emotions and their probabilities,
+          or None if an error occurs.
     """
     try:
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError(f"No image found at {image_path}")
-
-        analysis = DeepFace.analyze(image, actions=('emotion',), enforce_detection=False)
-        return analysis['emotion']
+        analysis = DeepFace.analyze(img_path=image_path, actions=('emotion',))
+        return analysis[0]['emotion']
     except Exception as e:
         print(f"Error in emotion detection: {e}")
         return None
@@ -49,14 +48,11 @@ def detect_emotions_in_frame(frame: np.ndarray) -> Optional[List[Tuple[str, floa
             cv2.imwrite(file_name, frame_rgb)
 
         analysis = DeepFace.analyze(file_name, actions=('emotion',), enforce_detection=False)
+        print(f'{analysis=}')
         os.remove(file_name)
 
-        if 'emotion' in analysis:
-            emotions = analysis['emotion']
-        else:
-            raise ValueError("Unexpected format of analysis results")
+        emotions = analysis[0]['emotion']
 
-        # dominant_emotions = sorted(emotions.items(), key=lambda item: item[1], reverse=True)[:3]
         return emotions
 
     except Exception as e:

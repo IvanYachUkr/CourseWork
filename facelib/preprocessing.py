@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-import mediapipe as mp
-from typing import List, Tuple
+from typing import Tuple
 
 
 def load_image(image_path: str) -> np.ndarray:
@@ -158,52 +157,3 @@ def process_image(image_path: str, target_height: int = 256, preserve_aspect_rat
                                    (target_height, target_height))  # Square resize if aspect ratio is not preserved
 
     return resized_image
-
-
-def detect_faces(image: np.ndarray) -> np.ndarray:
-    """
-    Detects faces in an image using MediaPipe Face Detection and annotates them.
-
-    Args:
-    image (np.ndarray): An RGB image array.
-
-    Returns:
-    np.ndarray: The image annotated with face detections.
-    """
-    mp_face_detection = mp.solutions.face_detection
-    mp_drawing = mp.solutions.drawing_utils
-
-    with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
-        results = face_detection.process(image)
-        if results.detections:
-            for detection in results.detections:
-                mp_drawing.draw_detection(image, detection)
-
-    return image
-
-
-def detect_faces_borders(image: np.ndarray) -> List[Tuple[int, int, int, int]]:
-    """
-    Detects faces in an image using MediaPipe Face Detection and returns their borders.
-
-    Args:
-    image (np.ndarray): An RGB image array.
-
-    Returns:
-    List[Tuple[int, int, int, int]]: A list of bounding boxes for each detected face,
-     formatted as (x, y, width, height).
-    """
-    mp_face_detection = mp.solutions.face_detection
-
-    with mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
-        results = face_detection.process(image)
-        face_borders = []
-
-        if results.detections:
-            for detection in results.detections:
-                bboxC = detection.location_data.relative_bounding_box
-                ih, iw, _ = image.shape
-                x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), int(bboxC.width * iw), int(bboxC.height * ih)
-                face_borders.append((x, y, w, h))
-
-    return face_borders
